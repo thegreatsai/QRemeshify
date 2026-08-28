@@ -35,6 +35,12 @@ def load_mesh(path: str | Path) -> Mesh:
     if not isinstance(loaded, trimesh.Trimesh):
         raise ValueError(f"'{path}' did not load as a single triangle mesh")
 
+    # Formats like STL store independent vertices per triangle corner, which
+    # leaves every triangle topologically disconnected. Weld coincident
+    # vertices so downstream tools (unwrapping, boundary detection) see the
+    # mesh's real connectivity.
+    loaded.merge_vertices()
+
     vertices = loaded.vertices.astype(np.float32)
     faces = loaded.faces.astype(np.uint32)
     normals = loaded.vertex_normals.astype(np.float32)

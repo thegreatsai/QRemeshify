@@ -7,12 +7,24 @@ wrap a 2D design onto its surface.
 This is a separate Python prototype, unrelated to the `QRemeshify` Blender
 addon that lives elsewhere in this repository.
 
-## Milestone 1 (current): mesh viewer + import
+## Milestone 1: mesh viewer + import
 
 - Load OBJ/STL/PLY/glTF via `trimesh`
 - Render with `moderngl` (shaded, wireframe toggle)
 - Orbit/pan/zoom camera
 - Minimal `imgui` control panel
+
+## Milestone 2 (current): UV unwrapping + flat panel export
+
+- Chart segmentation + parametrization via `xatlas`
+- Panels recovered as UV-connected components, rescaled to true mesh-space
+  size (undoing xatlas's `[0,1]` atlas packing)
+- SVG export of each panel's cut outline, laid out in a simple row-packed grid
+- "Unwrap to Panels" / "Export SVG" buttons in the viewer
+
+Note: input meshes with per-triangle-duplicated vertices (e.g. raw STL) are
+welded (`merge_vertices`) on load — otherwise every triangle is topologically
+isolated and unwrapping produces one degenerate panel per triangle.
 
 ## Setup
 
@@ -25,7 +37,7 @@ python -m wrap3d.app path/to/mesh.obj
 
 ## Roadmap
 
-1. **Mesh viewer + import** (this milestone)
-2. UV unwrapping (LSCM / ABF++ or as-rigid-as-possible parameterization)
-3. Flatten to 2D panels with seam allowance, packing, and SVG/PDF export
+1. **Mesh viewer + import** — done
+2. **UV unwrapping + flat panel export** — done (this milestone)
+3. Seam allowance, proper bin-packing, PDF export, panel labeling/notches
 4. Texture/decal wrapping onto the 3D surface for preview

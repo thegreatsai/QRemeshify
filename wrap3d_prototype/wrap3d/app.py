@@ -14,7 +14,9 @@ import numpy as np
 from imgui.integrations.pyglet import PygletProgrammablePipelineRenderer
 
 from wrap3d.camera import OrbitCamera
+from wrap3d.export_svg import export_panels_svg
 from wrap3d.mesh import Mesh, fit_to_unit_cube, load_mesh
+from wrap3d.unwrap import Panel, compute_uv_atlas, extract_panels
 
 VERTEX_SHADER = """
 #version 330
@@ -65,6 +67,8 @@ class Wrap3DViewer(mglw.WindowConfig):
         self.mesh: Mesh | None = None
         self.status_message = "No mesh loaded. Use File > Open or pass a path as argv[1]."
         self.wireframe = False
+        self.panels: list[Panel] | None = None
+        self.unwrap_status = ""
 
         imgui.create_context()
         self.imgui_renderer = PygletProgrammablePipelineRenderer(self.wnd._window)
@@ -85,10 +89,34 @@ class Wrap3DViewer(mglw.WindowConfig):
             return
 
         self.mesh = mesh
+        self.panels = None
+        self.unwrap_status = ""
         self._upload_mesh(mesh)
         self.status_message = (
             f"Loaded '{Path(path).name}' — {mesh.vertex_count} verts, {mesh.face_count} tris"
         )
+
+    def run_unwrap(self) -> None:
+        if self.mesh is None:
+            self.unwrap_status = "Load a mesh first."
+            return
+        try:
+            uv = compute_uv_atlas(self.mesh)
+            self.panels = extract_panels(self.mesh, uv)
+            self.unwrap_status = f"Unwrapped into {len(self.panels)} panels."
+        except Exception as exc:
+            self.panels = None
+            self.unwrap_status = f"Unwrap failed: {exc}"
+
+    def export_svg(self, out_path: str) -> None:
+        if not self.panels:
+            self.unwrap_status = "Nothing to export — run Unwrap first."
+            return
+        try:
+            export_panels_svg(self.panels, out_path)
+            self.unwrap_status = f"Exported {len(self.panels)} panels to '{out_path}'."
+        except Exception as exc:
+            self.unwrap_status = f"Export failed: {exc}"
 
     def _upload_mesh(self, mesh: Mesh) -> None:
         interleaved = np.hstack([mesh.vertices, mesh.normals]).astype("f4")
@@ -129,6 +157,18 @@ class Wrap3DViewer(mglw.WindowConfig):
         if imgui.button("Reset Camera"):
             self.camera = OrbitCamera()
         imgui.text("Drag: orbit  |  Shift+Drag: pan  |  Scroll: zoom")
+
+        imgui.separator()
+        imgui.text("Unwrap")
+        if imgui.button("Unwrap to Panels"):
+            self.run_unwrap()
+        if self.panels is not None:
+            imgui.same_line()
+            if imgui.button("Export SVG"):
+                out_path = str(Path.cwd() / "panels.svg")
+                self.export_svg(out_path)
+        if self.unwrap_status:
+            imgui.text_wrapped(self.unwrap_status)
         imgui.end()
         imgui.render()
         self.imgui_renderer.render(imgui.get_draw_data())
