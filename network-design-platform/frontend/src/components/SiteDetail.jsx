@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
+import { RackElevation } from "./RackElevation";
 import { ReferenceSelect } from "./ReferenceSelect";
 import { WorkflowBadge } from "./WorkflowBadge";
 
@@ -9,13 +10,18 @@ export function SiteDetail({ site }) {
   const [newRoomName, setNewRoomName] = useState("");
   const [newRoomType, setNewRoomType] = useState("");
   const [newRackNumber, setNewRackNumber] = useState("");
+  const [newRackTotalU, setNewRackTotalU] = useState("42");
+  const [selectedRack, setSelectedRack] = useState(null);
 
   const refresh = () => {
     api.listRooms(site.id).then(setRooms);
     api.listRacks(site.id).then(setRacks);
   };
 
-  useEffect(refresh, [site.id]);
+  useEffect(() => {
+    refresh();
+    setSelectedRack(null);
+  }, [site.id]);
 
   const addRoom = async (e) => {
     e.preventDefault();
@@ -29,7 +35,7 @@ export function SiteDetail({ site }) {
   const addRack = async (e) => {
     e.preventDefault();
     if (!newRackNumber) return;
-    await api.createRack(site.id, { rack_number: newRackNumber });
+    await api.createRack(site.id, { rack_number: newRackNumber, total_u: Number(newRackTotalU) || 42 });
     setNewRackNumber("");
     refresh();
   };
@@ -69,7 +75,13 @@ export function SiteDetail({ site }) {
         <h3>Racks</h3>
         <ul className="entity-list">
           {racks.map((rack) => (
-            <li key={rack.id}>{rack.rack_number}</li>
+            <li
+              key={rack.id}
+              className={rack.id === selectedRack?.id ? "entity-list-item--selected" : ""}
+              onClick={() => setSelectedRack(rack)}
+            >
+              {rack.rack_number} <span className="tag">{rack.total_u}U</span>
+            </li>
           ))}
         </ul>
         <form className="inline-form" onSubmit={addRack}>
@@ -78,8 +90,17 @@ export function SiteDetail({ site }) {
             value={newRackNumber}
             onChange={(e) => setNewRackNumber(e.target.value)}
           />
+          <input
+            type="number"
+            min="1"
+            title="Total U"
+            value={newRackTotalU}
+            onChange={(e) => setNewRackTotalU(e.target.value)}
+          />
           <button type="submit">Add Rack</button>
         </form>
+
+        {selectedRack && <RackElevation rack={selectedRack} />}
       </section>
     </div>
   );

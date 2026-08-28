@@ -27,5 +27,28 @@ export const api = {
   createRack: (siteId, payload) =>
     request(`/sites/${siteId}/racks`, { method: "POST", body: JSON.stringify(payload) }),
 
+  listRackItems: (rackId) => request(`/racks/${rackId}/items`),
+  createRackItem: (rackId, payload) =>
+    request(`/racks/${rackId}/items`, { method: "POST", body: JSON.stringify(payload) }),
+  moveRackItem: (rackId, itemId, startU) =>
+    request(`/racks/${rackId}/items/${itemId}/move`, {
+      method: "PATCH",
+      body: JSON.stringify({ start_u: startU }),
+    }),
+  deleteRackItem: (rackId, itemId) =>
+    request(`/racks/${rackId}/items/${itemId}`, { method: "DELETE" }),
+
+  createPatchPanel: (rackId, itemId, portCount) =>
+    request(`/racks/${rackId}/items/${itemId}/patch-panel`, {
+      method: "POST",
+      body: JSON.stringify({ port_count: portCount }),
+    }),
+  getPatchPanel: (panelId) => request(`/patch-panels/${panelId}`),
+  updatePort: (panelId, portId, payload) =>
+    request(`/patch-panels/${panelId}/ports/${portId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+
   getReferenceList: (key) => request(`/reference-lists/${key}`),
 };

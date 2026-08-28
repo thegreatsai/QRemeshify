@@ -2,27 +2,40 @@
 
 A multi-site web replacement for the `CCU_RACKID_BLDNG_CODE_NetworkDesign*.xlsm` template
 (41 sheets, VBA macros, one file per school site). See [ROADMAP.md](./ROADMAP.md) for the
-full source-workbook analysis and the phased build plan; this is Phase 0.
+full source-workbook analysis and the phased build plan. Phases 0 and 1 are done.
 
 Stack: **Python/FastAPI + PostgreSQL** backend · **React (Vite) + CSS** frontend, built with
 Node tooling.
 
-## What's here (Phase 0)
+## What's here
 
-- `backend/` — FastAPI app with SQLAlchemy models and CRUD API for `Site`, `Room`, `Rack`,
-  and the `ReferenceList`/`ReferenceItem` pair that replaces the old `Data Lists` sheet.
-  Alembic migrations, plus an `xlsm` importer (`app/importer/xlsm_importer.py`) that pulls
-  reference data and site identity out of an existing site workbook.
-- `frontend/` — React SPA: site list/create, site detail with rooms/racks, and a
-  `ReferenceSelect` dropdown component backed live by the reference-data API (the direct
-  replacement for a hardcoded `Data Lists` column).
-- `docker-compose.yml` — Postgres + backend for local dev.
+**Phase 0** — `backend/` FastAPI app with SQLAlchemy models and CRUD API for `Site`, `Room`,
+`Rack`, and the `ReferenceList`/`ReferenceItem` pair that replaces the old `Data Lists`
+sheet. Alembic migrations, plus an `xlsm` importer (`app/importer/xlsm_importer.py`) that
+pulls reference data and site identity out of an existing site workbook. `frontend/` React
+SPA: site list/create, site detail with rooms/racks, and a `ReferenceSelect` dropdown
+component backed live by the reference-data API.
 
-Both sides are tested: `cd backend && pytest` (10 tests, including an importer test against
-a synthetic fixture) and `cd frontend && npm run build`. The importer was also run against
-the real uploaded template and correctly (a) pulled in 62 reference lists / hundreds of
-items, and (b) refused to import site identity from it, since that particular file is the
-blank master template (no `School Information` values), not a filled-in site.
+**Phase 1** — Rack elevation builder, replacing the old 'Rack Elevations' sheet's
+merged-cell blocks: `RackItem` (equipment with a `start_u`/`size_u` position),
+`PatchPanel`/`Port` models, and an interactive drag-to-place UI (`RackElevation.jsx`) with
+server-validated overlap/capacity checks on every placement and move — a rejected drop shows
+an error instead of corrupting the layout. Patch panels get an auto-created port grid
+(`PatchPanelPorts.jsx`) for labeling/status. Equipment types come from a new
+`rack_equipment_type` reference list (seeded via migration `0003` — the old sheet tracked
+this as free text, never a dropdown).
+
+`docker-compose.yml` — Postgres + backend for local dev.
+
+Everything is tested, not just written: `cd backend && pytest` (21 tests: CRUD, the xlsm
+importer against a synthetic fixture, and rack-item overlap/capacity edge cases) and
+`cd frontend && npm run build`. The full Alembic migration chain was run forward and
+backward against a real database. The importer was also run against the real uploaded
+template and correctly (a) pulled in 62 reference lists / hundreds of items, and (b) refused
+to import site identity from it, since that particular file is the blank master template (no
+`School Information` values), not a filled-in site. The rack elevation UI was driven
+end-to-end in an actual browser: place equipment, drag it to a new U position, get a clear
+error when a drop would overlap another item, create a patch panel, and label/status a port.
 
 ## Running locally
 

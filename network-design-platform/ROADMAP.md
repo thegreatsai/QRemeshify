@@ -58,9 +58,16 @@ FastAPI app, Postgres schema for `site`, `reference_list`/`reference_item`, `roo
 Information`; React shell with site list/detail and a reference-data-backed dropdown
 component; docker-compose dev environment.
 
-**Phase 1 — Physical documentation**
-`rack`, `patch_panel`, `port` models; interactive rack-elevation builder (canvas/grid
-component, replacing the merged-cell sheets) with drag-to-place equipment.
+**Phase 1 — Physical documentation (done)**
+`rack_item` (equipment placed in a rack, `start_u`/`size_u`), `patch_panel` (a `rack_item`
+specialization), `port` models. Server-validated overlap/capacity checks on placement and on
+every move, so drag-to-place can't silently corrupt the layout. Interactive rack-elevation
+UI: a U-slot grid (U1 at the bottom, matching real elevation convention) with native
+drag-and-drop repositioning, an add-equipment form backed by a new `rack_equipment_type`
+reference list (the old sheet never had this as a dropdown), and a patch-panel port grid for
+labeling/status. Verified with pytest (21 tests, including overlap/capacity edge cases) and a
+full browser-driven pass: place equipment, drag to reposition, reject an overlapping drop,
+create a patch panel, edit a port.
 
 **Phase 2 — Cabling pipeline**
 `cable_drop` CRUD + the drop→patch-panel assignment logic that replaces

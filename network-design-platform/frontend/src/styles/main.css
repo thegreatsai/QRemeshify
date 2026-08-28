@@ -254,3 +254,178 @@ button:disabled {
   color: #dc2626;
   font-size: 0.8rem;
 }
+
+.entity-list li {
+  cursor: pointer;
+}
+
+.entity-list-item--selected {
+  outline: 2px solid var(--color-primary);
+}
+
+/* Rack elevation */
+
+.rack-elevation {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.rack-elevation h4 {
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rack-grid {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  max-width: 480px;
+}
+
+.rack-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px dashed #e5e7eb;
+  padding-left: 40px;
+  transition: background 0.1s;
+}
+
+.rack-slot:last-child {
+  border-bottom: none;
+}
+
+.rack-slot--drag-over {
+  background: #dbeafe;
+}
+
+.rack-slot-label {
+  position: absolute;
+  left: 6px;
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+}
+
+.rack-slot--filled {
+  padding: 2px 2px 2px 40px;
+}
+
+.rack-item {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+  border-radius: 4px;
+  background: #bfdbfe;
+  border: 1px solid #93c5fd;
+  cursor: grab;
+  font-size: 0.8rem;
+  overflow: hidden;
+}
+
+.rack-item--patch_panel { background: #bbf7d0; border-color: #86efac; }
+.rack-item--switch { background: #fde68a; border-color: #fcd34d; }
+.rack-item--router { background: #fbcfe8; border-color: #f9a8d4; }
+.rack-item--firewall { background: #fecaca; border-color: #fca5a5; }
+.rack-item--ups { background: #ddd6fe; border-color: #c4b5fd; }
+
+.rack-item-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rack-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.rack-item-actions button {
+  padding: 2px 8px;
+  font-size: 0.7rem;
+}
+
+.rack-item-delete {
+  background: transparent;
+  color: #6b7280;
+  font-weight: 700;
+  padding: 0 6px;
+  line-height: 1;
+}
+
+.rack-item-delete:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.rack-add-form {
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.rack-add-form input[type="number"] {
+  max-width: 70px;
+  flex: none;
+}
+
+/* Patch panel ports */
+
+.patch-panel-ports {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.patch-panel-ports h5 {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+}
+
+.port-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+  max-width: 480px;
+}
+
+.port {
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: #f1f5f9;
+  font-size: 0.7rem;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.port--patched {
+  background: #86efac;
+  border-color: #4ade80;
+}
+
+.port--reserved {
+  background: #fde68a;
+  border-color: #fcd34d;
+}
+
+.port--editing {
+  outline: 2px solid var(--color-primary);
+}
+
+.port-edit-form {
+  margin-top: 10px;
+  flex-wrap: wrap;
+}

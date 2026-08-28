@@ -5,6 +5,7 @@ class RackCreate(BaseModel):
     rack_number: str
     location: str | None = None
     notes: str | None = None
+    total_u: int = 42
 
 
 class RackRead(RackCreate):
