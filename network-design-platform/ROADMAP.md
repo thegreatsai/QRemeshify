@@ -69,20 +69,24 @@ labeling/status. Verified with pytest (21 tests, including overlap/capacity edge
 full browser-driven pass: place equipment, drag to reposition, reject an overlapping drop,
 create a patch panel, edit a port.
 
-**Phase 2 — Cabling pipeline (drop↔port assignment done)**
+**Phase 2 — Cabling pipeline (done)**
 `CableDrop` model with `port_id` as the *only* place a drop's port assignment lives --
 replacing `TransposeValuesOnly`'s manual 24-row copy/paste/transpose, and structurally
 preventing the two-copies-drift problem that macro was standing in for: the Drop List and
 the Patch Panel port grid both read the same row, so assigning or moving a drop (even across
 patch panels) needs no separate sync step. As-built vs draft is a `status` field, not a
-separate sheet. Assign/move/unassign API with server-side conflict checks (can't patch two
-drops into the same port), a site-wide ports endpoint for populating assignment pickers, and
-a Drop List UI wired to the same shared-refresh signal as the rack elevation view so a change
-in either shows up in the other immediately. Verified with pytest (31 tests total, including
-"move a drop between two different patch panels updates the Drop List") and a full
-browser-driven pass confirming the cross-view instant reflection.
-Still open in this phase: switch/VLAN fields on a drop (room/VLAN/voice-VLAN assignment),
-bulk drop import.
+separate sheet. VLAN and voice-VLAN are free-text fields (deliberately not reference-list
+dropdowns -- the source workbook has several different VLAN lists by room type and nothing
+in it pins down which one governs the Drop List's VLAN column, so a forced dropdown would be
+a guess). Assign/move/unassign API with server-side conflict checks (can't patch two drops
+into the same port), a site-wide ports endpoint for populating assignment pickers, an
+upsert-by-drop-number bulk import (CSV paste in the UI) that reports per-row errors without
+failing the whole batch, and a Drop List UI wired to the same shared-refresh signal as the
+rack elevation view so a change in either shows up in the other immediately. Verified with
+pytest (38 tests total, including "move a drop between two different patch panels updates
+the Drop List" and "one bad room name in a bulk import doesn't sink the other rows") and
+full browser-driven passes confirming the cross-view instant reflection and the bulk-import
+partial-failure UX.
 
 **Phase 3 — Switch/VLAN engine**
 `switch`, `switch_port`, `vlan` models; port-allocation calculator (pure function,

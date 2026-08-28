@@ -7,6 +7,8 @@ class CableDropCreate(BaseModel):
     drop_number: str
     room_id: int | None = None
     status: DropStatus = DropStatus.DRAFT
+    vlan: str | None = None
+    voice_vlan: str | None = None
     notes: str | None = None
 
 
@@ -14,6 +16,8 @@ class CableDropUpdate(BaseModel):
     drop_number: str | None = None
     room_id: int | None = None
     status: DropStatus | None = None
+    vlan: str | None = None
+    voice_vlan: str | None = None
     notes: str | None = None
 
 
@@ -41,5 +45,33 @@ class CableDropRead(BaseModel):
     room_id: int | None
     drop_number: str
     status: DropStatus
+    vlan: str | None
+    voice_vlan: str | None
     notes: str | None
     port_location: PortLocation | None = None
+
+
+class BulkDropRow(BaseModel):
+    drop_number: str
+    room_name: str | None = None
+    status: DropStatus = DropStatus.DRAFT
+    vlan: str | None = None
+    voice_vlan: str | None = None
+    notes: str | None = None
+
+
+class BulkImportRequest(BaseModel):
+    rows: list[BulkDropRow]
+
+
+class BulkImportRowResult(BaseModel):
+    drop_number: str
+    action: str  # "created" | "updated" | "error"
+    detail: str | None = None
+
+
+class BulkImportResult(BaseModel):
+    results: list[BulkImportRowResult]
+    created: int
+    updated: int
+    errors: int

@@ -6,8 +6,12 @@ from app.models.cable_drop import CableDrop
 from app.models.patch_panel import PatchPanel, Port, PortStatus
 from app.models.rack import Rack
 from app.models.rack_item import RackItem
+from app.models.room import Room
 from app.models.site import Site
 from app.schemas.cable_drop import (
+    BulkImportRequest,
+    BulkImportResult,
+    BulkImportRowResult,
     CableDropCreate,
     CableDropRead,
     CableDropUpdate,
@@ -65,6 +69,66 @@ def create_cable_drop(site_id: int, payload: CableDropCreate, db: Session = Depe
     db.commit()
     db.refresh(drop)
     return _to_read(drop)
+
+
+@router.post("/sites/{site_id}/cable-drops/bulk", response_model=BulkImportResult)
+def bulk_import_cable_drops(site_id: int, payload: BulkImportRequest, db: Session = Depends(get_db)):
+    """Upsert-by-drop_number, so re-importing a revised drop list (a new
+    export from the field survey, say) updates existing rows instead of
+    failing on the duplicate drop numbers. Room is resolved by name against
+    this site's existing rooms; a name that doesn't match is reported as an
+    error for that row rather than silently creating a new room or leaving
+    it ambiguous which room was meant."""
+    if db.get(Site, site_id) is None:
+        raise HTTPException(status_code=404, detail=f"Site {site_id} not found")
+
+    rooms_by_name = {r.name: r.id for r in db.query(Room).filter(Room.site_id == site_id).all()}
+    existing_by_number = {
+        d.drop_number: d for d in db.query(CableDrop).filter(CableDrop.site_id == site_id).all()
+    }
+
+    results: list[BulkImportRowResult] = []
+    created = updated = errors = 0
+
+    for row in payload.rows:
+        try:
+            room_id = None
+            if row.room_name:
+                room_id = rooms_by_name.get(row.room_name)
+                if room_id is None:
+                    raise ValueError(f"Room '{row.room_name}' not found at this site")
+
+            existing = existing_by_number.get(row.drop_number)
+            if existing is not None:
+                existing.room_id = room_id
+                existing.status = row.status
+                existing.vlan = row.vlan
+                existing.voice_vlan = row.voice_vlan
+                existing.notes = row.notes
+                results.append(BulkImportRowResult(drop_number=row.drop_number, action="updated"))
+                updated += 1
+            else:
+                new_drop = CableDrop(
+                    site_id=site_id,
+                    drop_number=row.drop_number,
+                    room_id=room_id,
+                    status=row.status,
+                    vlan=row.vlan,
+                    voice_vlan=row.voice_vlan,
+                    notes=row.notes,
+                )
+                db.add(new_drop)
+                existing_by_number[row.drop_number] = new_drop
+                results.append(BulkImportRowResult(drop_number=row.drop_number, action="created"))
+                created += 1
+        except ValueError as exc:
+            results.append(
+                BulkImportRowResult(drop_number=row.drop_number, action="error", detail=str(exc))
+            )
+            errors += 1
+
+    db.commit()
+    return BulkImportResult(results=results, created=created, updated=updated, errors=errors)
 
 
 def _get_drop_or_404(drop_id: int, db: Session) -> CableDrop:

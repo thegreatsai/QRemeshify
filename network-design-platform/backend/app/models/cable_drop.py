@@ -35,6 +35,13 @@ class CableDrop(Base):
     room_id: Mapped[int] = mapped_column(ForeignKey("room.id"), nullable=True)
     drop_number: Mapped[str] = mapped_column(String(32), nullable=False)
     status: Mapped[DropStatus] = mapped_column(Enum(DropStatus), default=DropStatus.DRAFT, nullable=False)
+    # Free text, not reference-list-backed: the real workbook's VLAN Designation
+    # column draws from several different VLAN lists depending on room type
+    # (instructional_vlans / service_vlans / hd_vlans / vlans_for_sgt), and
+    # nothing in the workbook pins down which one governs this column, so
+    # picking one would be a guess dressed up as a dropdown.
+    vlan: Mapped[str] = mapped_column(String(32), nullable=True)
+    voice_vlan: Mapped[str] = mapped_column(String(32), nullable=True)
     notes: Mapped[str] = mapped_column(String(1024), nullable=True)
 
     # The single source of truth for "which port is this drop patched

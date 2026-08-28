@@ -59,6 +59,8 @@ export const api = {
   assignCableDrop: (dropId, portId) =>
     request(`/cable-drops/${dropId}/assign`, { method: "POST", body: JSON.stringify({ port_id: portId }) }),
   unassignCableDrop: (dropId) => request(`/cable-drops/${dropId}/unassign`, { method: "POST" }),
+  bulkImportCableDrops: (siteId, rows) =>
+    request(`/sites/${siteId}/cable-drops/bulk`, { method: "POST", body: JSON.stringify({ rows }) }),
 
   listSitePorts: (siteId, freeOnly = false) =>
     request(`/sites/${siteId}/ports${freeOnly ? "?free_only=true" : ""}`),
