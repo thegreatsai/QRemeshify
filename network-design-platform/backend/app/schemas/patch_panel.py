@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
+from app.models.cable_drop import DropStatus
 from app.models.patch_panel import PortStatus
 
 
@@ -12,12 +13,21 @@ class PortUpdate(BaseModel):
     status: PortStatus | None = None
 
 
+class CableDropSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    drop_number: str
+    status: DropStatus
+    room_id: int | None
+
+
 class PortRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     port_number: int
     label: str | None
     status: PortStatus
+    cable_drop: CableDropSummary | None = None
 
 
 class PatchPanelRead(BaseModel):

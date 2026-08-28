@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
+import { DropList } from "./DropList";
 import { RackElevation } from "./RackElevation";
 import { ReferenceSelect } from "./ReferenceSelect";
 import { WorkflowBadge } from "./WorkflowBadge";
@@ -12,6 +13,13 @@ export function SiteDetail({ site }) {
   const [newRackNumber, setNewRackNumber] = useState("");
   const [newRackTotalU, setNewRackTotalU] = useState("42");
   const [selectedRack, setSelectedRack] = useState(null);
+
+  // Bumped by RackElevation/PatchPanelPorts and DropList whenever either
+  // mutates a cable-drop or port assignment. Both read it as an effect
+  // dependency to refetch -- so a move made in one view shows up in the
+  // other immediately, with no separate sync step.
+  const [dataVersion, setDataVersion] = useState(0);
+  const bump = () => setDataVersion((v) => v + 1);
 
   const refresh = () => {
     api.listRooms(site.id).then(setRooms);
@@ -100,7 +108,14 @@ export function SiteDetail({ site }) {
           <button type="submit">Add Rack</button>
         </form>
 
-        {selectedRack && <RackElevation rack={selectedRack} />}
+        {selectedRack && (
+          <RackElevation rack={selectedRack} refreshSignal={dataVersion} onChange={bump} />
+        )}
+      </section>
+
+      <section>
+        <h3>Drop List</h3>
+        <DropList site={site} rooms={rooms} refreshSignal={dataVersion} onChange={bump} />
       </section>
     </div>
   );

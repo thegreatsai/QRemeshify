@@ -139,9 +139,23 @@ def test_update_port_label_and_status(client, rack_id):
 
     resp = client.patch(
         f"/patch-panels/{panel['id']}/ports/{port_id}",
-        json={"label": "Room 101 - Drop 3", "status": "patched"},
+        json={"label": "Reserved for future AP", "status": "reserved"},
     )
     assert resp.status_code == 200
     body = resp.json()
-    assert body["label"] == "Room 101 - Drop 3"
-    assert body["status"] == "patched"
+    assert body["label"] == "Reserved for future AP"
+    assert body["status"] == "reserved"
+
+
+def test_manually_setting_port_status_patched_rejected(client, rack_id):
+    """A port can only become 'patched' via a cable-drop assignment (see
+    test_cable_drops.py) -- not by hand-editing its status."""
+    item = client.post(
+        f"/racks/{rack_id}/items",
+        json={"name": "Patch Panel", "equipment_type": "patch_panel", "start_u": 1, "size_u": 1},
+    ).json()
+    panel = client.post(f"/racks/{rack_id}/items/{item['id']}/patch-panel", json={"port_count": 4}).json()
+    port_id = panel["ports"][0]["id"]
+
+    resp = client.patch(f"/patch-panels/{panel['id']}/ports/{port_id}", json={"status": "patched"})
+    assert resp.status_code == 422

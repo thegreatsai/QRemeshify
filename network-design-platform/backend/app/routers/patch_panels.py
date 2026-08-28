@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.patch_panel import PatchPanel, Port
+from app.models.patch_panel import PatchPanel, Port, PortStatus
 from app.models.rack_item import RackItem
 from app.schemas.patch_panel import PatchPanelCreate, PatchPanelRead, PortRead, PortUpdate
 
@@ -39,10 +39,27 @@ def get_patch_panel(panel_id: int, db: Session = Depends(get_db)):
 
 @router.patch("/patch-panels/{panel_id}/ports/{port_id}", response_model=PortRead)
 def update_port(panel_id: int, port_id: int, payload: PortUpdate, db: Session = Depends(get_db)):
+    """Label/status edits only. Whether a port is PATCHED follows from a
+    CableDrop being assigned to it (POST .../cable-drops/{id}/assign) --
+    not settable here, so there's only one place that fact can change."""
     port = db.get(Port, port_id)
     if port is None or port.patch_panel_id != panel_id:
         raise HTTPException(status_code=404, detail=f"Port {port_id} not found on patch panel {panel_id}")
-    for field, value in payload.model_dump(exclude_unset=True).items():
+
+    updates = payload.model_dump(exclude_unset=True)
+    if "status" in updates:
+        if updates["status"] == PortStatus.PATCHED and port.cable_drop is None:
+            raise HTTPException(
+                status_code=422,
+                detail="A port can only be marked patched by assigning a cable drop to it",
+            )
+        if updates["status"] != PortStatus.PATCHED and port.cable_drop is not None:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Port {port.port_number} has drop '{port.cable_drop.drop_number}' assigned; "
+                "unassign it first",
+            )
+    for field, value in updates.items():
         setattr(port, field, value)
     db.commit()
     db.refresh(port)

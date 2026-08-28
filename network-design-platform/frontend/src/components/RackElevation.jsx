@@ -13,7 +13,7 @@ const SLOT_HEIGHT = 28; // px per rack U
  * rack's total_u capacity (see app/routers/rack_items.py), so a rejected
  * drop shows an error instead of silently corrupting the layout.
  */
-export function RackElevation({ rack }) {
+export function RackElevation({ rack, refreshSignal, onChange }) {
   const [items, setItems] = useState([]);
   const [error, setError] = useState(null);
   const [expandedItemId, setExpandedItemId] = useState(null);
@@ -27,6 +27,13 @@ export function RackElevation({ rack }) {
     setExpandedItemId(null);
     setError(null);
   }, [rack.id]);
+
+  // A shared-refresh tick (e.g. a drop assignment made from the Drop List)
+  // should just re-fetch this rack's items -- not collapse whichever
+  // patch panel the user has open.
+  useEffect(() => {
+    if (refreshSignal !== undefined) refresh();
+  }, [refreshSignal]);
 
   const itemAt = (u) => items.find((i) => u >= i.start_u && u <= i.start_u + i.size_u - 1);
   const isTopOfItem = (item, u) => item.start_u + item.size_u - 1 === u;
@@ -43,6 +50,7 @@ export function RackElevation({ rack }) {
       });
       setForm({ name: "", equipment_type: "", start_u: "1", size_u: "1" });
       refresh();
+      onChange();
     } catch (err) {
       setError(err.message);
     }
@@ -57,6 +65,7 @@ export function RackElevation({ rack }) {
     try {
       await api.moveRackItem(rack.id, itemId, targetU);
       refresh();
+      onChange();
     } catch (err) {
       setError(err.message);
     }
@@ -67,6 +76,7 @@ export function RackElevation({ rack }) {
     await api.deleteRackItem(rack.id, itemId);
     if (expandedItemId === itemId) setExpandedItemId(null);
     refresh();
+    onChange();
   };
 
   const addPorts = async (itemId, ev) => {
@@ -78,6 +88,7 @@ export function RackElevation({ rack }) {
       await api.createPatchPanel(rack.id, itemId, Number(count));
       refresh();
       setExpandedItemId(itemId);
+      onChange();
     } catch (err) {
       setError(err.message);
     }
@@ -181,7 +192,13 @@ export function RackElevation({ rack }) {
       </form>
 
       {expandedItem?.patch_panel && (
-        <PatchPanelPorts panelId={expandedItem.patch_panel.id} panelName={expandedItem.name} />
+        <PatchPanelPorts
+          siteId={rack.site_id}
+          panelId={expandedItem.patch_panel.id}
+          panelName={expandedItem.name}
+          refreshSignal={refreshSignal}
+          onChange={onChange}
+        />
       )}
     </div>
   );

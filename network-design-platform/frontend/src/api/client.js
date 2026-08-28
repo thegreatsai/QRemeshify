@@ -50,5 +50,18 @@ export const api = {
       body: JSON.stringify(payload),
     }),
 
+  listCableDrops: (siteId) => request(`/sites/${siteId}/cable-drops`),
+  createCableDrop: (siteId, payload) =>
+    request(`/sites/${siteId}/cable-drops`, { method: "POST", body: JSON.stringify(payload) }),
+  updateCableDrop: (dropId, payload) =>
+    request(`/cable-drops/${dropId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteCableDrop: (dropId) => request(`/cable-drops/${dropId}`, { method: "DELETE" }),
+  assignCableDrop: (dropId, portId) =>
+    request(`/cable-drops/${dropId}/assign`, { method: "POST", body: JSON.stringify({ port_id: portId }) }),
+  unassignCableDrop: (dropId) => request(`/cable-drops/${dropId}/unassign`, { method: "POST" }),
+
+  listSitePorts: (siteId, freeOnly = false) =>
+    request(`/sites/${siteId}/ports${freeOnly ? "?free_only=true" : ""}`),
+
   getReferenceList: (key) => request(`/reference-lists/${key}`),
 };

@@ -44,3 +44,4 @@ class Port(Base):
     status: Mapped[PortStatus] = mapped_column(Enum(PortStatus), default=PortStatus.FREE, nullable=False)
 
     patch_panel: Mapped["PatchPanel"] = relationship(back_populates="ports")
+    cable_drop: Mapped["CableDrop"] = relationship(back_populates="port", uselist=False)
