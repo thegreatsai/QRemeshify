@@ -14,7 +14,7 @@ import numpy as np
 from imgui.integrations.pyglet import PygletProgrammablePipelineRenderer
 
 from wrap3d.camera import OrbitCamera
-from wrap3d.export_svg import export_panels_svg
+from wrap3d.export_svg import export_panels_pdf, export_panels_svg
 from wrap3d.mesh import Mesh, fit_to_unit_cube, load_mesh
 from wrap3d.unwrap import Panel, compute_uv_atlas, extract_panels
 
@@ -69,6 +69,8 @@ class Wrap3DViewer(mglw.WindowConfig):
         self.wireframe = False
         self.panels: list[Panel] | None = None
         self.unwrap_status = ""
+        self.seam_allowance = 0.01
+        self.notch_spacing = 0.05
 
         imgui.create_context()
         self.imgui_renderer = PygletProgrammablePipelineRenderer(self.wnd._window)
@@ -113,7 +115,27 @@ class Wrap3DViewer(mglw.WindowConfig):
             self.unwrap_status = "Nothing to export — run Unwrap first."
             return
         try:
-            export_panels_svg(self.panels, out_path)
+            export_panels_svg(
+                self.panels,
+                out_path,
+                seam_allowance=self.seam_allowance,
+                notch_spacing=self.notch_spacing,
+            )
+            self.unwrap_status = f"Exported {len(self.panels)} panels to '{out_path}'."
+        except Exception as exc:
+            self.unwrap_status = f"Export failed: {exc}"
+
+    def export_pdf(self, out_path: str) -> None:
+        if not self.panels:
+            self.unwrap_status = "Nothing to export — run Unwrap first."
+            return
+        try:
+            export_panels_pdf(
+                self.panels,
+                out_path,
+                seam_allowance=self.seam_allowance,
+                notch_spacing=self.notch_spacing,
+            )
             self.unwrap_status = f"Exported {len(self.panels)} panels to '{out_path}'."
         except Exception as exc:
             self.unwrap_status = f"Export failed: {exc}"
@@ -160,13 +182,21 @@ class Wrap3DViewer(mglw.WindowConfig):
 
         imgui.separator()
         imgui.text("Unwrap")
+        _, self.seam_allowance = imgui.slider_float(
+            "Seam allowance", self.seam_allowance, 0.0, 0.1
+        )
+        _, self.notch_spacing = imgui.slider_float(
+            "Notch spacing", self.notch_spacing, 0.01, 0.2
+        )
         if imgui.button("Unwrap to Panels"):
             self.run_unwrap()
         if self.panels is not None:
             imgui.same_line()
             if imgui.button("Export SVG"):
-                out_path = str(Path.cwd() / "panels.svg")
-                self.export_svg(out_path)
+                self.export_svg(str(Path.cwd() / "panels.svg"))
+            imgui.same_line()
+            if imgui.button("Export PDF"):
+                self.export_pdf(str(Path.cwd() / "panels.pdf"))
         if self.unwrap_status:
             imgui.text_wrapped(self.unwrap_status)
         imgui.end()
