@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { PatchPanelPorts } from "./PatchPanelPorts";
 import { ReferenceSelect } from "./ReferenceSelect";
+import { SwitchPorts } from "./SwitchPorts";
 
 const SLOT_HEIGHT = 28; // px per rack U
 
@@ -94,6 +95,23 @@ export function RackElevation({ rack, refreshSignal, onChange }) {
     }
   };
 
+  const configureSwitch = async (itemId, ev) => {
+    ev.stopPropagation();
+    const model = window.prompt("Switch model?", "Cisco 9300-48");
+    if (!model) return;
+    const count = window.prompt("Number of ports?", "48");
+    if (!count) return;
+    setError(null);
+    try {
+      await api.createSwitch(rack.id, itemId, model, Number(count));
+      refresh();
+      setExpandedItemId(itemId);
+      onChange();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const rows = [];
   for (let u = rack.total_u; u >= 1; u--) {
     const item = itemAt(u);
@@ -131,7 +149,9 @@ export function RackElevation({ rack, refreshSignal, onChange }) {
           className={`rack-item rack-item--${item.equipment_type}`}
           draggable
           onDragStart={(e) => e.dataTransfer.setData("text/plain", String(item.id))}
-          onClick={() => item.patch_panel && setExpandedItemId(expandedItemId === item.id ? null : item.id)}
+          onClick={() =>
+            (item.patch_panel || item.switch) && setExpandedItemId(expandedItemId === item.id ? null : item.id)
+          }
         >
           <span className="rack-item-name">
             {item.name} <span className="tag">{item.equipment_type}</span>
@@ -140,6 +160,11 @@ export function RackElevation({ rack, refreshSignal, onChange }) {
             {item.equipment_type === "patch_panel" && !item.patch_panel && (
               <button type="button" onClick={(e) => addPorts(item.id, e)}>
                 Add Ports
+              </button>
+            )}
+            {item.equipment_type === "switch" && !item.switch && (
+              <button type="button" onClick={(e) => configureSwitch(item.id, e)}>
+                Configure
               </button>
             )}
             <button type="button" className="rack-item-delete" onClick={(e) => deleteItem(item.id, e)}>
@@ -196,6 +221,16 @@ export function RackElevation({ rack, refreshSignal, onChange }) {
           siteId={rack.site_id}
           panelId={expandedItem.patch_panel.id}
           panelName={expandedItem.name}
+          refreshSignal={refreshSignal}
+          onChange={onChange}
+        />
+      )}
+
+      {expandedItem?.switch && (
+        <SwitchPorts
+          siteId={rack.site_id}
+          switchId={expandedItem.switch.id}
+          switchName={expandedItem.name}
           refreshSignal={refreshSignal}
           onChange={onChange}
         />

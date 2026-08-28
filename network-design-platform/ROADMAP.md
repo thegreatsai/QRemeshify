@@ -88,10 +88,34 @@ the Drop List" and "one bad room name in a bulk import doesn't sink the other ro
 full browser-driven passes confirming the cross-view instant reflection and the bulk-import
 partial-failure UX.
 
-**Phase 3 — Switch/VLAN engine**
-`switch`, `switch_port`, `vlan` models; port-allocation calculator (pure function,
-unit-tested) replacing the `Switch & Port Allocation` formulas; CLI-command generation for
-9300/2960/MS390 as a templated export instead of hand-typed cell strings.
+**Phase 3 — Switch/VLAN engine (done)**
+`Switch`/`SwitchPort` (a `RackItem` specialization, same pattern as `PatchPanel`) and a
+per-site `Vlan` model. `CableDrop.switch_port_id` extends the single-source-of-truth pattern
+from Phase 2 one hop further down the physical chain: a drop's patch-panel port and its
+switch cross-connect are independent fields on the same row, so the Drop List's new "Switch
+Port" column, the switch's own port grid, and moving a drop between switches (even across
+different switches) all read/write the same fact. Port-allocation calculator
+(`app/services/port_allocation.py`) is an explicitly clean-room reimplementation of the
+`Switch & Port Allocation` sheet's *intent*, not its formulas -- those referenced hidden
+helper cells in ways not safely reverse-engineerable from a blank template, so faking that
+fidelity would have been worse than being upfront about writing a fresh, tested algorithm.
+CLI export generates real Cisco IOS interface config for 9300/2960-class switches and a
+Meraki-API-shaped JSON port list for MS-series (Meraki doesn't use IOS-style CLI, so it
+doesn't get fake CLI text) — both derived live from the same relational port data the UI
+edits, replacing the hand-typed `Commands` column in `VLAN Config (9300)`/`(2960)`.
+
+Verified with pytest (79 tests) and full browser-driven passes (VLAN + switch-port config +
+drop cross-connect + move-between-switch-ports + calculator + config download). Two real
+bugs were caught only by testing against a real Postgres instance instead of just SQLite (the
+project's target per `docker-compose.yml`, but pytest's fixtures use SQLite for speed):
+SQLAlchemy's `Enum` column type persists a Python enum member's *name* by default, not its
+*value* (`WorkflowStage.SURVEY` → `"SURVEY"`), which SQLite's default-off CHECK constraints
+never caught but Postgres's native enum types rejected outright — fixed with a
+`values_callable` helper (`app/database.py::str_enum`) used by every enum column. A second
+bug (a missing conditional in `SwitchPorts.jsx` that always rendered a port's number instead
+of its assigned drop) was only visible by actually reading the rendered page, not by any
+automated check. Both are a good reminder that this project's SQLite-only pytest suite is
+fast but not sufficient on its own — Postgres and the browser are where the real coverage is.
 
 **Phase 4 — Program management**
 `bom_item`, `action_item`, checklist views; `Network Summary (DOE)`-equivalent report

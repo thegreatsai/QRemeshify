@@ -3,10 +3,10 @@ with real role-based permissions instead of sheet visibility toggling."""
 
 import enum
 
-from sqlalchemy import Enum, String
+from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from app.database import Base, str_enum
 
 
 class Role(str, enum.Enum):
@@ -23,4 +23,4 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[Role] = mapped_column(Enum(Role), default=Role.VIEWER, nullable=False)
+    role: Mapped[Role] = mapped_column(str_enum(Role), default=Role.VIEWER, nullable=False)

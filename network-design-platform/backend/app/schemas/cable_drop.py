@@ -25,6 +25,10 @@ class DropAssign(BaseModel):
     port_id: int
 
 
+class SwitchPortAssign(BaseModel):
+    switch_port_id: int
+
+
 class PortLocation(BaseModel):
     """Flattened Port -> PatchPanel -> RackItem -> Rack chain, so the Drop
     List view doesn't need four round trips to say where a drop lives."""
@@ -35,6 +39,21 @@ class PortLocation(BaseModel):
     rack_item_name: str
     rack_id: int
     rack_number: str
+    cable_drop_id: int | None = None
+
+
+class SwitchPortLocation(BaseModel):
+    """Same flattening, one hop down the physical chain: SwitchPort ->
+    Switch -> RackItem -> Rack."""
+
+    switch_port_id: int
+    port_number: int
+    switch_id: int
+    switch_model: str
+    rack_item_name: str
+    rack_id: int
+    rack_number: str
+    vlan_number: int | None = None
     cable_drop_id: int | None = None
 
 
@@ -49,6 +68,7 @@ class CableDropRead(BaseModel):
     voice_vlan: str | None
     notes: str | None
     port_location: PortLocation | None = None
+    switch_port_location: SwitchPortLocation | None = None
 
 
 class BulkDropRow(BaseModel):

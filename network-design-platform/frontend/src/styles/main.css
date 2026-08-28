@@ -549,3 +549,65 @@ button:disabled {
   padding-left: 18px;
   color: #dc2626;
 }
+
+/* Switch ports */
+
+.rack-item--switch { background: #fde68a; border-color: #fcd34d; }
+
+.port--switch.port--mode-trunk {
+  background: #ddd6fe;
+  border-color: #c4b5fd;
+}
+
+.port--switch.port--patched {
+  background: #86efac;
+  border-color: #4ade80;
+}
+
+.download-config-btn {
+  margin-left: 10px;
+  padding: 3px 10px;
+  font-size: 0.75rem;
+}
+
+.patch-panel-ports h5 {
+  display: flex;
+  align-items: center;
+}
+
+/* VLAN manager */
+
+.vlan-manager {
+  margin-top: 8px;
+}
+
+/* Port allocation calculator */
+
+.port-allocation-calculator {
+  margin-top: 8px;
+}
+
+.calculator-form {
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.calculator-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.calculator-form input {
+  width: 110px;
+}
+
+.calculator-result {
+  margin-top: 14px;
+}
+
+.calculator-result > p {
+  margin: 0 0 8px;
+}

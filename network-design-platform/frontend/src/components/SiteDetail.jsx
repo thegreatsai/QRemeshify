@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { DropList } from "./DropList";
+import { PortAllocationCalculator } from "./PortAllocationCalculator";
 import { RackElevation } from "./RackElevation";
 import { ReferenceSelect } from "./ReferenceSelect";
+import { VlanManager } from "./VlanManager";
 import { WorkflowBadge } from "./WorkflowBadge";
 
 export function SiteDetail({ site }) {
@@ -114,8 +116,18 @@ export function SiteDetail({ site }) {
       </section>
 
       <section>
+        <h3>VLANs</h3>
+        <VlanManager site={site} refreshSignal={dataVersion} onChange={bump} />
+      </section>
+
+      <section>
         <h3>Drop List</h3>
         <DropList site={site} rooms={rooms} refreshSignal={dataVersion} onChange={bump} />
+      </section>
+
+      <section>
+        <h3>Port Allocation Calculator</h3>
+        <PortAllocationCalculator />
       </section>
     </div>
   );

@@ -10,6 +10,7 @@ import { api } from "../api/client";
 export function DropList({ site, rooms, refreshSignal, onChange }) {
   const [drops, setDrops] = useState([]);
   const [ports, setPorts] = useState([]);
+  const [switchPorts, setSwitchPorts] = useState([]);
   const [error, setError] = useState(null);
   const [form, setForm] = useState({ drop_number: "", room_id: "", vlan: "", voice_vlan: "" });
   const [bulkText, setBulkText] = useState("");
@@ -19,6 +20,7 @@ export function DropList({ site, rooms, refreshSignal, onChange }) {
   const refresh = () => {
     api.listCableDrops(site.id).then(setDrops);
     api.listSitePorts(site.id).then(setPorts);
+    api.listSiteSwitchPorts(site.id).then(setSwitchPorts);
   };
 
   useEffect(refresh, [site.id, refreshSignal]);
@@ -100,8 +102,29 @@ export function DropList({ site, rooms, refreshSignal, onChange }) {
   };
 
   const portOptions = (drop) => {
-    const currentPortId = drop.port_location?.port_id;
     return ports.map((p) => {
+      const occupiedByOther = p.cable_drop_id != null && p.cable_drop_id !== drop.id;
+      return { ...p, disabled: occupiedByOther };
+    });
+  };
+
+  const assignSwitchPortTo = async (drop, switchPortId) => {
+    setError(null);
+    try {
+      if (switchPortId === "") {
+        await api.unassignCableDropSwitchPort(drop.id);
+      } else {
+        await api.assignCableDropSwitchPort(drop.id, Number(switchPortId));
+      }
+      refresh();
+      onChange(); // instantly refetches the Switch view too
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const switchPortOptions = (drop) => {
+    return switchPorts.map((p) => {
       const occupiedByOther = p.cable_drop_id != null && p.cable_drop_id !== drop.id;
       return { ...p, disabled: occupiedByOther };
     });
@@ -119,6 +142,7 @@ export function DropList({ site, rooms, refreshSignal, onChange }) {
             <th>Voice VLAN</th>
             <th>Status</th>
             <th>Patched At</th>
+            <th>Switch Port</th>
             <th></th>
           </tr>
         </thead>
@@ -148,6 +172,22 @@ export function DropList({ site, rooms, refreshSignal, onChange }) {
                 </select>
               </td>
               <td>
+                <select
+                  className="reference-select"
+                  value={drop.switch_port_location?.switch_port_id ?? ""}
+                  onChange={(e) => assignSwitchPortTo(drop, e.target.value)}
+                >
+                  <option value="">Unassigned</option>
+                  {switchPortOptions(drop).map((p) => (
+                    <option key={p.switch_port_id} value={p.switch_port_id} disabled={p.disabled}>
+                      {p.rack_number} / {p.rack_item_name} / Port {p.port_number}
+                      {p.vlan_number != null ? ` (VLAN ${p.vlan_number})` : ""}
+                      {p.disabled ? " (occupied)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </td>
+              <td>
                 <button type="button" className="rack-item-delete" onClick={() => deleteDrop(drop.id)}>
                   ×
                 </button>
@@ -156,7 +196,7 @@ export function DropList({ site, rooms, refreshSignal, onChange }) {
           ))}
           {drops.length === 0 && (
             <tr>
-              <td colSpan={7} className="empty-state">
+              <td colSpan={8} className="empty-state">
                 No drops yet.
               </td>
             </tr>

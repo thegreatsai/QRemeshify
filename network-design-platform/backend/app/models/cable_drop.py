@@ -15,10 +15,10 @@ fall out of sync.
 
 import enum
 
-from sqlalchemy import Enum, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database import Base
+from app.database import Base, str_enum
 
 
 class DropStatus(str, enum.Enum):
@@ -34,7 +34,7 @@ class CableDrop(Base):
     site_id: Mapped[int] = mapped_column(ForeignKey("site.id"), nullable=False)
     room_id: Mapped[int] = mapped_column(ForeignKey("room.id"), nullable=True)
     drop_number: Mapped[str] = mapped_column(String(32), nullable=False)
-    status: Mapped[DropStatus] = mapped_column(Enum(DropStatus), default=DropStatus.DRAFT, nullable=False)
+    status: Mapped[DropStatus] = mapped_column(str_enum(DropStatus), default=DropStatus.DRAFT, nullable=False)
     # Free text, not reference-list-backed: the real workbook's VLAN Designation
     # column draws from several different VLAN lists depending on room type
     # (instructional_vlans / service_vlans / hd_vlans / vlans_for_sgt), and
@@ -49,6 +49,14 @@ class CableDrop(Base):
     # database, not by an application-level sync routine.
     port_id: Mapped[int] = mapped_column(ForeignKey("port.id"), unique=True, nullable=True)
 
+    # Same pattern, one hop further down the physical chain: which switch
+    # port this drop is cross-connected to via a patch cable -- replacing
+    # the Drop List sheet's hand-typed Switch Type/Switch Number/Port
+    # Number columns. Independent of port_id (a drop can be terminated at
+    # a patch panel without yet being cross-connected to a switch).
+    switch_port_id: Mapped[int] = mapped_column(ForeignKey("switch_port.id"), unique=True, nullable=True)
+
     site: Mapped["Site"] = relationship()
     room: Mapped["Room"] = relationship()
     port: Mapped["Port"] = relationship(back_populates="cable_drop")
+    switch_port: Mapped["SwitchPort"] = relationship(back_populates="cable_drop")

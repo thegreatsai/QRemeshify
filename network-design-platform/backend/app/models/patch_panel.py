@@ -6,10 +6,10 @@ the 'TransposeValuesOnly' macro's manual 24-row copy/paste/transpose."""
 
 import enum
 
-from sqlalchemy import Enum, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database import Base
+from app.database import Base, str_enum
 
 
 class PortStatus(str, enum.Enum):
@@ -41,7 +41,7 @@ class Port(Base):
     patch_panel_id: Mapped[int] = mapped_column(ForeignKey("patch_panel.id"), nullable=False)
     port_number: Mapped[int] = mapped_column(Integer, nullable=False)
     label: Mapped[str] = mapped_column(String(128), nullable=True)
-    status: Mapped[PortStatus] = mapped_column(Enum(PortStatus), default=PortStatus.FREE, nullable=False)
+    status: Mapped[PortStatus] = mapped_column(str_enum(PortStatus), default=PortStatus.FREE, nullable=False)
 
     patch_panel: Mapped["PatchPanel"] = relationship(back_populates="ports")
     cable_drop: Mapped["CableDrop"] = relationship(back_populates="port", uselist=False)

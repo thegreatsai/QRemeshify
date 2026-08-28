@@ -42,6 +42,13 @@ class PatchPanelSummary(BaseModel):
     port_count: int
 
 
+class SwitchSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    model: str
+    port_count: int
+
+
 class RackItemRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
@@ -52,3 +59,4 @@ class RackItemRead(BaseModel):
     size_u: int
     notes: str | None
     patch_panel: PatchPanelSummary | None = None
+    switch: SwitchSummary | None = None

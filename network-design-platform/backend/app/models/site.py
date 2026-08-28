@@ -5,10 +5,10 @@ with fragile external-workbook links between them."""
 import enum
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, String, func
+from sqlalchemy import DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database import Base
+from app.database import Base, str_enum
 
 
 class WorkflowStage(str, enum.Enum):
@@ -33,7 +33,7 @@ class Site(Base):
     address: Mapped[str] = mapped_column(String(255), nullable=True)
     district: Mapped[str] = mapped_column(String(64), nullable=True)
     workflow_stage: Mapped[WorkflowStage] = mapped_column(
-        Enum(WorkflowStage), default=WorkflowStage.SURVEY, nullable=False
+        str_enum(WorkflowStage), default=WorkflowStage.SURVEY, nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

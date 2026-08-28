@@ -65,5 +65,34 @@ export const api = {
   listSitePorts: (siteId, freeOnly = false) =>
     request(`/sites/${siteId}/ports${freeOnly ? "?free_only=true" : ""}`),
 
+  createSwitch: (rackId, itemId, model, portCount, managementIp) =>
+    request(`/racks/${rackId}/items/${itemId}/switch`, {
+      method: "POST",
+      body: JSON.stringify({ model, port_count: portCount, management_ip: managementIp || null }),
+    }),
+  getSwitch: (switchId) => request(`/switches/${switchId}`),
+  updateSwitchPort: (switchId, portId, payload) =>
+    request(`/switches/${switchId}/ports/${portId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  switchExportUrl: (switchId, interfacePrefix) =>
+    `${BASE_URL}/switches/${switchId}/export${interfacePrefix ? `?interface_prefix=${encodeURIComponent(interfacePrefix)}` : ""}`,
+
+  listVlans: (siteId) => request(`/sites/${siteId}/vlans`),
+  createVlan: (siteId, payload) =>
+    request(`/sites/${siteId}/vlans`, { method: "POST", body: JSON.stringify(payload) }),
+  deleteVlan: (vlanId) => request(`/vlans/${vlanId}`, { method: "DELETE" }),
+
+  assignCableDropSwitchPort: (dropId, switchPortId) =>
+    request(`/cable-drops/${dropId}/assign-switch-port`, {
+      method: "POST",
+      body: JSON.stringify({ switch_port_id: switchPortId }),
+    }),
+  unassignCableDropSwitchPort: (dropId) =>
+    request(`/cable-drops/${dropId}/unassign-switch-port`, { method: "POST" }),
+  listSiteSwitchPorts: (siteId, freeOnly = false) =>
+    request(`/sites/${siteId}/switch-ports${freeOnly ? "?free_only=true" : ""}`),
+
+  calculatePortAllocation: (payload) =>
+    request(`/port-allocation/calculate`, { method: "POST", body: JSON.stringify(payload) }),
+
   getReferenceList: (key) => request(`/reference-lists/${key}`),
 };

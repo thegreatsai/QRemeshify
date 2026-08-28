@@ -2,7 +2,7 @@
 
 A multi-site web replacement for the `CCU_RACKID_BLDNG_CODE_NetworkDesign*.xlsm` template
 (41 sheets, VBA macros, one file per school site). See [ROADMAP.md](./ROADMAP.md) for the
-full source-workbook analysis and the phased build plan. Phases 0, 1, and 2 are done.
+full source-workbook analysis and the phased build plan. Phases 0 through 3 are done.
 
 Stack: **Python/FastAPI + PostgreSQL** backend · **React (Vite) + CSS** frontend, built with
 Node tooling.
@@ -35,22 +35,28 @@ either view on any mutation, that both read as a refetch trigger. Drops also car
 VLAN/voice-VLAN fields, and a bulk-import endpoint (CSV paste in the UI) upserts by drop
 number and reports per-row errors without failing the whole batch.
 
+**Phase 3 (switch/VLAN engine)** — `Switch`/`SwitchPort` (a `RackItem` specialization, same
+pattern as `PatchPanel`) and a per-site `Vlan` model. `CableDrop.switch_port_id` extends the
+Phase 2 single-source-of-truth pattern one hop further: a drop's patch-panel port and its
+switch cross-connect are independent fields on the same row, so `SwitchPorts.jsx`, the Drop
+List's new "Switch Port" column, and moving a drop between switches all read/write the same
+fact. `app/services/port_allocation.py` is a tested, clean-room reimplementation of the
+`Switch & Port Allocation` sheet's intent (not its formulas — see ROADMAP.md for why), backing
+`PortAllocationCalculator.jsx`. `app/services/cli_export.py` generates real Cisco IOS config
+for 9300/2960-class switches and a Meraki-API-shaped JSON port list for MS-series switches
+(Meraki doesn't use IOS CLI), downloadable from the switch's port grid.
+
 `docker-compose.yml` — Postgres + backend for local dev.
 
-Everything is tested, not just written: `cd backend && pytest` (38 tests: CRUD, the xlsm
-importer against a synthetic fixture, rack-item overlap/capacity edge cases, drop
-assign/move/unassign including "move a drop between two different patch panels updates the
-Drop List", and bulk import including "one bad room name doesn't sink the other rows") and
-`cd frontend && npm run build`. The full Alembic migration chain was run forward and
-backward against a real database. The importer was also run against the real uploaded
-template and correctly (a) pulled in 62 reference lists / hundreds of items, and (b) refused
-to import site identity from it, since that particular file is the blank master template (no
-`School Information` values), not a filled-in site. The rack elevation UI, the drop↔port
-sync, and the bulk import were each driven end-to-end in an actual browser: place equipment,
-drag it to a new U position, get a clear error on an overlapping drop, create a patch panel,
-assign/label a port, move a drop from one patch panel to another with the Drop List visibly
-updating with no manual refresh, and bulk-paste a CSV with a bad row and see the partial
-success/error summary.
+Everything is tested, not just written: `cd backend && pytest` (79 tests) and
+`cd frontend && npm run build`. The importer was run against the real uploaded template and
+correctly (a) pulled in 62 reference lists / hundreds of items, and (b) refused to import site
+identity from it, since that file is the blank master template, not a filled-in site. Every
+feature through Phase 2 was driven end-to-end in an actual browser (place/drag equipment,
+patch-panel and drop-list sync, bulk import). Phase 3 added a stronger check: the full Alembic
+chain and a chunk of the API were also run against a **real local Postgres server** (not just
+pytest's SQLite fixtures), which caught two real bugs pytest's SQLite suite couldn't see —
+see "Notes on what was and wasn't verified" below.
 
 ## Running locally
 
@@ -101,8 +107,20 @@ python scripts/import_xlsm.py path/to/site.xlsm --reference-only
 ## Notes on what was and wasn't verified
 
 - `docker-compose.yml` / `Dockerfile` follow standard FastAPI+Postgres patterns but weren't
-  build-tested in this environment (no Docker daemon available here) — please confirm on
-  first run.
+  build-tested via `docker compose up` in this environment (no Docker daemon available here)
+  — please confirm on first run. The migrations and API *were* separately verified against a
+  real Postgres server running directly on the host, which is a meaningfully strong check on
+  the schema/ORM side even though the container wrapper itself is unverified.
+- Migration `0006` can't apply via plain SQLite `ALTER` (adding a column with a FOREIGN
+  KEY/UNIQUE constraint needs SQLite's batch/copy-and-move mode, which this migration doesn't
+  use — see the note in `alembic/versions/0006_switch_vlan.py`). Not a problem for the actual
+  target (Postgres, verified working); a fresh SQLite dev DB needs `Base.metadata.create_all`
+  instead of `alembic upgrade head` past that point.
+- Every enum column uses `app/database.py::str_enum` rather than SQLAlchemy's plain `Enum()`.
+  Plain `Enum()` persists a Python enum member's *name* by default ("SURVEY"), not its value
+  ("survey") — invisible on SQLite (no CHECK constraint by default), but rejected outright by
+  a real Postgres native enum type. Found by testing against actual Postgres instead of only
+  pytest's SQLite fixtures; if you add a new enum column, use `str_enum(...)`, not `Enum(...)`.
 - The `xlsm` importer's `School Information` cell mapping (`F4`/`F5` for building code/rack
   ID) was confirmed by grepping the workbook's own cross-sheet formulas, which are the only
   two School Information cells referenced anywhere else in the template. The other fields

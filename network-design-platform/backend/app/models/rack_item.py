@@ -30,6 +30,9 @@ class RackItem(Base):
     patch_panel: Mapped["PatchPanel"] = relationship(
         back_populates="rack_item", uselist=False, cascade="all, delete-orphan"
     )
+    switch: Mapped["Switch"] = relationship(
+        back_populates="rack_item", uselist=False, cascade="all, delete-orphan"
+    )
 
     @property
     def end_u(self) -> int:
